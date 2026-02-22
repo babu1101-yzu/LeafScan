@@ -278,12 +278,26 @@ const CROPS = [
 
 function CropSelector({ selected, onSelect }) {
   return (
-    <div className="rounded-2xl p-5" style={{ background: 'rgba(10,31,20,0.85)', border: '1px solid rgba(0,255,135,0.2)' }}>
+    <div className="rounded-2xl p-5" style={{
+      background: 'rgba(10,31,20,0.85)',
+      border: selected ? '1.5px solid rgba(0,255,135,0.45)' : '1.5px solid rgba(251,191,36,0.5)',
+      boxShadow: selected ? '0 0 20px rgba(0,255,135,0.1)' : '0 0 20px rgba(251,191,36,0.1)',
+    }}>
       <div className="flex items-center justify-between mb-3">
         <p className="font-orbitron font-bold text-white text-sm flex items-center gap-2">
           <Leaf className="w-4 h-4 text-neon-500" />
           Select Your Crop
-          <span className="text-xs font-rajdhani font-normal text-neon-500/70">(improves accuracy)</span>
+          {!selected ? (
+            <span className="text-xs font-rajdhani font-bold px-2 py-0.5 rounded-full animate-pulse"
+              style={{ background: 'rgba(251,191,36,0.2)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.4)' }}>
+              ⚠ REQUIRED
+            </span>
+          ) : (
+            <span className="text-xs font-rajdhani font-bold px-2 py-0.5 rounded-full"
+              style={{ background: 'rgba(0,255,135,0.15)', color: '#00FF87', border: '1px solid rgba(0,255,135,0.4)' }}>
+              ✓ SELECTED
+            </span>
+          )}
         </p>
         {selected && (
           <button onClick={() => onSelect(null)}
@@ -317,17 +331,28 @@ function CropSelector({ selected, onSelect }) {
           )
         })}
       </div>
-      {selected && (
-        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-          className="mt-3 flex items-center gap-2 px-3 py-2 rounded-xl"
-          style={{ background: 'rgba(0,255,135,0.1)', border: '1px solid rgba(0,255,135,0.3)' }}>
-          <div className="w-2 h-2 rounded-full bg-neon-500 animate-pulse" />
-          <p className="text-sm font-rajdhani font-semibold text-neon-500">
-            ✓ Crop hint active: <span className="text-white">{CROPS.find(c => c.id === selected)?.emoji} {CROPS.find(c => c.id === selected)?.label}</span>
-            {' '}— AI will focus on this crop's diseases
-          </p>
-        </motion.div>
-      )}
+      <AnimatePresence mode="wait">
+        {selected ? (
+          <motion.div key="selected" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className="mt-3 flex items-center gap-2 px-3 py-2 rounded-xl"
+            style={{ background: 'rgba(0,255,135,0.1)', border: '1px solid rgba(0,255,135,0.3)' }}>
+            <div className="w-2 h-2 rounded-full bg-neon-500 animate-pulse" />
+            <p className="text-sm font-rajdhani font-semibold text-neon-500">
+              ✓ Crop selected: <span className="text-white">{CROPS.find(c => c.id === selected)?.emoji} {CROPS.find(c => c.id === selected)?.label}</span>
+              {' '}— AI will focus on this crop's diseases only
+            </p>
+          </motion.div>
+        ) : (
+          <motion.div key="required" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className="mt-3 flex items-center gap-2 px-3 py-2 rounded-xl"
+            style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.3)' }}>
+            <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+            <p className="text-sm font-rajdhani font-semibold text-yellow-400">
+              Select a crop above before uploading your leaf photo
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -347,6 +372,10 @@ export default function Diagnosis() {
   }, [])
 
   const onDrop = useCallback((accepted) => {
+    if (!selectedCrop) {
+      toast.error('⚠ Please select a crop first before uploading!', { duration: 3000 })
+      return
+    }
     const f = accepted[0]
     if (!f) return
     setFile(f)
@@ -354,7 +383,7 @@ export default function Diagnosis() {
     setResult(null)
     setStep('upload')
     setActiveTab('overview')
-  }, [])
+  }, [selectedCrop])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -365,6 +394,10 @@ export default function Diagnosis() {
   })
 
   const handleAnalyze = async () => {
+    if (!selectedCrop) {
+      toast.error('⚠ Please select a crop first!', { duration: 3000 })
+      return
+    }
     if (!file) return
     setLoading(true)
     setStep('analyzing')
@@ -455,15 +488,34 @@ export default function Diagnosis() {
         <div className="space-y-4">
           <motion.div
             {...getRootProps()}
-            className="relative rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-300 overflow-hidden"
+            className="relative rounded-2xl border-2 border-dashed transition-all duration-300 overflow-hidden"
             style={{
-              borderColor: isDragActive ? '#00FF87' : preview ? 'rgba(0,255,135,0.4)' : 'rgba(0,255,135,0.18)',
-              background: isDragActive ? 'rgba(0,255,135,0.06)' : 'rgba(10,31,20,0.6)',
+              borderColor: !selectedCrop ? 'rgba(251,191,36,0.25)' : isDragActive ? '#00FF87' : preview ? 'rgba(0,255,135,0.4)' : 'rgba(0,255,135,0.18)',
+              background: !selectedCrop ? 'rgba(10,20,15,0.5)' : isDragActive ? 'rgba(0,255,135,0.06)' : 'rgba(10,31,20,0.6)',
               minHeight: '320px',
+              cursor: selectedCrop ? 'pointer' : 'not-allowed',
+              opacity: selectedCrop ? 1 : 0.7,
             }}
-            whileHover={{ borderColor: 'rgba(0,255,135,0.45)' }}
+            whileHover={selectedCrop ? { borderColor: 'rgba(0,255,135,0.45)' } : {}}
           >
-            <input {...getInputProps()} />
+            <input {...getInputProps()} disabled={!selectedCrop} />
+            {/* Locked overlay when no crop selected */}
+            {!selectedCrop && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl"
+                style={{ background: 'rgba(5,13,10,0.75)', backdropFilter: 'blur(2px)' }}>
+                <motion.div
+                  animate={{ scale: [1, 1.08, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3"
+                  style={{ background: 'rgba(251,191,36,0.15)', border: '2px solid rgba(251,191,36,0.4)' }}>
+                  <span className="text-3xl">🔒</span>
+                </motion.div>
+                <p className="font-orbitron font-bold text-yellow-400 text-base mb-1">Select a Crop First</p>
+                <p className="text-sm font-rajdhani text-yellow-400/60 text-center px-6">
+                  Choose your crop type above to unlock the upload area
+                </p>
+              </div>
+            )}
             {preview ? (
               <div className="relative w-full h-80">
                 <img src={preview} alt="Preview" className="w-full h-full object-cover" />
@@ -519,20 +571,32 @@ export default function Diagnosis() {
               </motion.button>
             )}
             <motion.button
-              whileHover={{ scale: preview && !loading ? 1.02 : 1 }}
-              whileTap={{ scale: preview && !loading ? 0.98 : 1 }}
+              whileHover={{ scale: preview && !loading && selectedCrop ? 1.02 : 1 }}
+              whileTap={{ scale: preview && !loading && selectedCrop ? 0.98 : 1 }}
               onClick={handleAnalyze}
-              disabled={!preview || loading}
+              disabled={!preview || loading || !selectedCrop}
+              title={!selectedCrop ? 'Select a crop first' : !preview ? 'Upload a leaf photo first' : 'Analyze'}
               className="flex items-center gap-2 flex-1 justify-center py-3.5 rounded-xl font-orbitron font-bold transition-all"
               style={{
-                background: preview && !loading ? 'linear-gradient(135deg, #00FF87, #00D4FF)' : 'rgba(0,255,135,0.1)',
-                color: preview && !loading ? '#050D0A' : 'rgba(0,255,135,0.35)',
-                boxShadow: preview && !loading ? '0 0 20px rgba(0,255,135,0.3)' : 'none',
+                background: preview && !loading && selectedCrop
+                  ? 'linear-gradient(135deg, #00FF87, #00D4FF)'
+                  : !selectedCrop
+                    ? 'rgba(251,191,36,0.12)'
+                    : 'rgba(0,255,135,0.1)',
+                color: preview && !loading && selectedCrop
+                  ? '#050D0A'
+                  : !selectedCrop
+                    ? 'rgba(251,191,36,0.5)'
+                    : 'rgba(0,255,135,0.35)',
+                boxShadow: preview && !loading && selectedCrop ? '0 0 20px rgba(0,255,135,0.3)' : 'none',
+                cursor: !selectedCrop || !preview ? 'not-allowed' : 'pointer',
               }}
             >
               {loading
                 ? <><Loader2 className="w-5 h-5 animate-spin" /> Analyzing...</>
-                : <><Microscope className="w-5 h-5" /> Analyze Now</>
+                : !selectedCrop
+                  ? <><span>🔒</span> Select Crop First</>
+                  : <><Microscope className="w-5 h-5" /> Analyze Now</>
               }
             </motion.button>
           </div>

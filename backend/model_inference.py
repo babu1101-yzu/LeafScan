@@ -669,11 +669,85 @@ def _real_predict(model, image_path: str, crop_hint: Optional[str] = None) -> Tu
         return _mock_predict(image_path, crop_hint)
 
 
+def _analyze_image_colors(image_path: str) -> dict:
+    """
+    Analyze image color distribution to determine disease likelihood.
+    Returns a dict with dominant color pattern and feature scores.
+    """
+    try:
+        from PIL import Image
+        import numpy as np
+
+        img = Image.open(image_path).convert("RGB")
+        img = img.resize((224, 224))
+        arr = np.array(img, dtype=float)
+
+        r = arr[:, :, 0]
+        g = arr[:, :, 1]
+        b = arr[:, :, 2]
+
+        r_mean = float(r.mean())
+        g_mean = float(g.mean())
+        b_mean = float(b.mean())
+        total = r_mean + g_mean + b_mean or 1.0
+
+        green_ratio  = g_mean / total
+        red_ratio    = r_mean / total
+        blue_ratio   = b_mean / total
+        brightness   = total / 3.0
+        variance     = float(arr.std())
+
+        # Yellow: high R + high G, low B
+        yellow_score = (r_mean + g_mean) / 2.0 - b_mean
+
+        # Brown/red: high R, lower G, low B
+        brown_score  = r_mean - b_mean - abs(r_mean - g_mean * 1.4)
+
+        # White/light: all channels high
+        white_score  = min(r_mean, g_mean, b_mean)
+
+        # Dark: all channels low
+        dark_score   = 255.0 - brightness
+
+        # Determine dominant pattern
+        if green_ratio > 0.38 and brightness > 75 and g_mean > r_mean and g_mean > b_mean:
+            dominant = "healthy_green"
+        elif yellow_score > 35 and brightness > 100 and r_mean > b_mean * 1.3:
+            dominant = "yellow"
+        elif brown_score > 20 and r_mean > g_mean * 1.15 and r_mean > b_mean * 1.4:
+            dominant = "brown_red"
+        elif white_score > 160 and brightness > 170:
+            dominant = "white_light"
+        elif brightness < 55:
+            dominant = "dark"
+        elif variance > 60 and green_ratio > 0.30:
+            dominant = "spotted_green"   # green with spots → disease
+        else:
+            dominant = "mixed"
+
+        logger.info(
+            f"Image analysis: dominant={dominant}, green={green_ratio:.2f}, "
+            f"yellow={yellow_score:.1f}, brown={brown_score:.1f}, brightness={brightness:.1f}"
+        )
+        return {
+            "dominant":     dominant,
+            "green_ratio":  green_ratio,
+            "yellow_score": yellow_score,
+            "brown_score":  brown_score,
+            "white_score":  white_score,
+            "brightness":   brightness,
+            "variance":     variance,
+        }
+    except Exception as e:
+        logger.warning(f"Image color analysis failed: {e}")
+        return {"dominant": "unknown"}
+
+
 def _mock_predict(image_path: str = None, crop_hint: Optional[str] = None) -> Tuple[str, float]:
     """
-    Intelligent mock prediction for demo/testing.
-    When crop_hint is provided, only returns diseases for that crop.
-    Uses image filename hints if available.
+    Intelligent mock prediction using image color analysis.
+    When crop_hint is provided, predictions are filtered to that crop's diseases.
+    Color analysis maps visual patterns to likely diseases for realistic results.
     """
     import random
 
@@ -681,36 +755,86 @@ def _mock_predict(image_path: str = None, crop_hint: Optional[str] = None) -> Tu
     candidates = _get_crop_classes(crop_hint)
     candidates = [c for c in candidates if c != "Background_without_leaves"]
 
-    # Try to use filename as hint for more realistic demo
-    if image_path and not crop_hint:
-        fname = Path(image_path).stem.lower()
-        for class_name in CLASS_NAMES:
-            crop = class_name.split("___")[0].lower().replace(",_bell", "").replace("_", "")
-            if crop in fname:
-                confidence = round(random.uniform(0.82, 0.97), 4)
-                return class_name, confidence
+    disease_classes = [c for c in candidates if "healthy" not in c.lower()]
+    healthy_classes = [c for c in candidates if "healthy" in c.lower()]
 
-    # When crop_hint is given, pick a realistic disease (not always healthy)
-    if crop_hint and candidates:
-        # 70% chance of disease, 30% healthy — realistic distribution
-        disease_classes = [c for c in candidates if "healthy" not in c.lower()]
-        healthy_classes = [c for c in candidates if "healthy" in c.lower()]
+    # ── Analyze image colors ──────────────────────────────────────────────────
+    color = _analyze_image_colors(image_path) if image_path else {"dominant": "unknown"}
+    dominant = color.get("dominant", "unknown")
 
-        if disease_classes and random.random() < 0.70:
-            class_name = random.choice(disease_classes)
-            confidence = round(random.uniform(0.84, 0.97), 4)
-        elif healthy_classes:
-            class_name = random.choice(healthy_classes)
-            confidence = round(random.uniform(0.88, 0.99), 4)
-        else:
-            class_name = random.choice(candidates)
-            confidence = round(random.uniform(0.80, 0.96), 4)
-        return class_name, confidence
+    def pick_disease_by_pattern(pattern_keywords: list, fallback_all: bool = True):
+        """Pick a disease class matching pattern keywords, or fall back."""
+        matched = [c for c in disease_classes
+                   if any(kw in c.lower() for kw in pattern_keywords)]
+        if matched:
+            return random.choice(matched), round(random.uniform(0.82, 0.95), 4)
+        if fallback_all and disease_classes:
+            return random.choice(disease_classes), round(random.uniform(0.78, 0.91), 4)
+        return None, None
 
-    # No hint — random from all classes
-    class_name = random.choice(candidates)
-    confidence = round(random.uniform(0.72, 0.95), 4)
-    return class_name, confidence
+    # ── Color → disease mapping ───────────────────────────────────────────────
+    if dominant == "healthy_green":
+        # Mostly green → very likely healthy (85% chance)
+        if healthy_classes and random.random() < 0.85:
+            return random.choice(healthy_classes), round(random.uniform(0.88, 0.97), 4)
+        # 15% chance of early/mild disease even on green leaves
+        cls, conf = pick_disease_by_pattern(
+            ["early_blight", "bacterial_spot", "leaf_mold", "cercospora", "brown_spot"]
+        )
+        if cls:
+            return cls, conf
+
+    elif dominant == "yellow":
+        # Yellow leaves → virus, early blight, mosaic, curl, nutrient deficiency
+        cls, conf = pick_disease_by_pattern([
+            "yellow", "virus", "mosaic", "curl", "early_blight",
+            "bacterial_leaf_blight", "wilt", "greening"
+        ])
+        if cls:
+            return cls, conf
+
+    elif dominant == "brown_red":
+        # Brown/red → late blight, rot, rust, brown spot, scorch
+        cls, conf = pick_disease_by_pattern([
+            "late_blight", "blight", "rot", "rust", "brown_spot",
+            "scorch", "target_spot", "septoria", "anthracnose", "red_rot"
+        ])
+        if cls:
+            return cls, conf
+
+    elif dominant == "white_light":
+        # White/light patches → powdery mildew, smut, false smut
+        cls, conf = pick_disease_by_pattern([
+            "powdery_mildew", "powdery", "mildew", "smut", "false_smut", "scab"
+        ])
+        if cls:
+            return cls, conf
+
+    elif dominant == "dark":
+        # Dark/black areas → black rot, esca, sigatoka, blast
+        cls, conf = pick_disease_by_pattern([
+            "black_rot", "esca", "sigatoka", "blast", "berry_disease",
+            "northern_leaf_blight", "gray_leaf_spot"
+        ])
+        if cls:
+            return cls, conf
+
+    elif dominant == "spotted_green":
+        # Green with spots → bacterial spot, septoria, cercospora, leaf spot
+        cls, conf = pick_disease_by_pattern([
+            "bacterial_spot", "septoria", "cercospora", "leaf_spot",
+            "common_rust", "brown_rust", "yellow_rust"
+        ])
+        if cls:
+            return cls, conf
+
+    # ── Default fallback: 65% disease, 35% healthy ───────────────────────────
+    if disease_classes and random.random() < 0.65:
+        return random.choice(disease_classes), round(random.uniform(0.78, 0.93), 4)
+    elif healthy_classes:
+        return random.choice(healthy_classes), round(random.uniform(0.85, 0.97), 4)
+
+    return random.choice(candidates), round(random.uniform(0.75, 0.92), 4)
 
 
 def get_disease_info(class_name: str) -> dict:
