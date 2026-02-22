@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.env
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Database
+*.db
+*.sqlite3
+
+# Uploads (user content)
+backend/uploads/diagnosis/*.jpg
+backend/uploads/diagnosis/*.png
+backend/uploads/community/*.jpg
+backend/uploads/community/*.png
+
+# ML Models (large binary files)
+backend/models/*.pt
+backend/models/*.pth
+backend/models/*.pkl
+backend/models/model.yolov8
+
+# Node
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+.npm
+
+# Cache
+backend/market_cache.json
+*.cache
+.cache/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Test artifacts
+backend/crop_test.txt
+backend/api_check.txt
+backend/pkg_check.txt
+backend/status_result.txt
+backend/frontend_check.txt
+backend/final_status.txt
+backend/final_test_results.txt
+backend/test_results.txt
+backend/gemini_result.txt
+
+# Temp scripts
+backend/write_chatbot.py
+backend/gen_chatbot.py
+backend/fix_chatbot.py
+backend/update_tips.py
+backend/complete_tips.py
+backend/check_pkgs.py
+backend/check_api.py
+backend/check_frontend.py
+backend/verify_keys.py

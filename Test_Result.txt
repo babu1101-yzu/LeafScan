@@ -1,0 +1,85 @@
+======================================================================
+LeafScan Full API Test Suite
+Date: 2026-02-22 21:34:23
+Backend: http://localhost:8000
+======================================================================
+
+[1] HEALTH CHECK
+FAIL | Root Endpoint | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+
+[2] AUTHENTICATION
+FAIL | Register New User | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Login | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Get Current User (authenticated) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Get Current User (unauthenticated) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+
+[3] CHATBOT (LiAn - Gemini 2.5 Flash)
+FAIL | Chatbot Status | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Chat History (authenticated) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Chat History (unauthenticated) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+INFO | Chat Message test: SKIPPED (Gemini API - tested manually, confirmed working)
+INFO | Previous test confirmed: POST /api/chatbot/message → 200 OK with Gemini response
+
+[4] AI CROP RECOMMENDATION
+FAIL | Model Status | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | All Supported Crops | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Predict Crops (Tropical preset) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Predict Crops (Highland preset) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Predict (unauthenticated) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Analyze Soil | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+
+[5] DISEASE DIAGNOSIS (YOLOv8)
+FAIL | Model Status | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | All Diseases List | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Diagnosis History | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Predict Disease (green leaf image) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+
+[6] CULTIVATION TIPS (20 Crops)
+FAIL | All Tips | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Tip #1 (Tomato) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Tip #5 (Wheat) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Tip #10 (Apple) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Tip #15 (Pepper) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Tip #20 (Cabbage) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Tip #999 (Not Found) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+
+[7] WEATHER (OpenWeatherMap)
+FAIL | Current Weather (London) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Weather Status | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+
+[8] COMMUNITY PLATFORM
+FAIL | Get All Posts | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Create Post | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Create Post (unauthenticated) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+
+[9] SEARCH HISTORY
+FAIL | Get History (authenticated) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Get History (unauthenticated) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+
+[10] FERTILIZER CALCULATOR
+FAIL | Supported Crops | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Fertilizer Types | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Soil Guide | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Calculate (Tomato, 1ha, Loamy) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Calculate (Rice, 2ha, Sandy) | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+
+[11] MARKET PRICES
+FAIL | All Market Prices | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Top Movers | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Cache Status | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Tomato Price | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Coffee Price | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Invalid Crop | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+
+[12] CROP CALENDAR
+FAIL | All Crops Calendar | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Tomato Calendar | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+FAIL | Rice Calendar | ERROR: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: 
+
+======================================================================
+FINAL RESULTS: 0 PASSED | 46 FAILED | 46 TOTAL
+SUCCESS RATE: 0.0%
+======================================================================
+
+Test completed: 2026-02-22 21:37:31
+Note: Chatbot /message endpoint tested manually — confirmed working with Gemini 2.5 Flash
